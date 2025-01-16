@@ -23,14 +23,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          python-version: '3.9'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -75,5 +78,4 @@ jobs:
           region: ${{ env.REGION }}
           image: asia-south2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/app:${{ github.sha }}
           secrets: |
-            /secrets/firebase/firebase.json=firebase-sa-key:latest
-            /secrets/gcp/gcp.json=gcp-sa-key:latest
+            /secrets/gcp-service-account-key.json=gcp-sa-key:latest
