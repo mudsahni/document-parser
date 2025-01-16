@@ -1,0 +1,28 @@
+test.py
+src/.env
+.idea
+.Idea
+.DS_Store
+*.pyc
+
+# Ignore VS Code settings folder
+.vscode/
+
+secrets/
+
+
+# Ignore OS-specific files (macOS, Windows, etc.)
+.DS_Store        # macOS
+Thumbs.db         # Windows
+
+# Ignore log files
+*.log
+
+# Ignore build artifacts
+/node_modules/
+/dist/
+/build/
+
+/other
+
+.venv/
