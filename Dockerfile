@@ -4,7 +4,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Set env to test
-ENV ENV=TEST
+ENV ENV=PROD
 
 # Copy the service account key into the Docker container
 COPY ./secrets/gcp-service-account-key.json src/application_default_credentials.json
