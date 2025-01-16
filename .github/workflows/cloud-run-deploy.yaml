@@ -8,7 +8,7 @@ on:
 
 env:
   PROJECT_ID: muditsahni-bb2eb # Keep your project ID
-  SERVICE_NAME: documentstore # Keep your service name
+  SERVICE_NAME: documentparser # Keep your service name
   REGION: asia-south2 # Keep your region
 
 jobs:
