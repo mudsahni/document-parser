@@ -1,0 +1,79 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # or your default branch
+  workflow_dispatch:  # Allows manual triggering
+
+env:
+  PROJECT_ID: muditsahni-bb2eb # Replace with your GCP Project ID
+  SERVICE_NAME: documentparser # Replace with your Cloud Run service name
+  REGION: asia-south2 # Replace with your desired region
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          install_components: 'gke-gcloud-auth-plugin'
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Get Firebase Credentials
+        run: |
+          gcloud secrets versions access latest --project="${{ env.PROJECT_ID }}" --secret="firebase-sa-key" > firebase-sa-key.json
+
+      - name: Get GCP Service Account Key
+        run: |
+          gcloud secrets versions access latest --project="${{ env.PROJECT_ID }}" --secret="gcp-sa-key" > gcp-sa-key.json
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker asia-south2-docker.pkg.dev
+
+      - name: Build and Push Docker image
+        run: |
+          IMAGE_PATH="asia-south2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/app"
+          docker build -t $IMAGE_PATH:${{ github.sha }} -t $IMAGE_PATH:latest .
+          docker push $IMAGE_PATH:${{ github.sha }}
+          docker push $IMAGE_PATH:latest
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: asia-south2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/app:${{ github.sha }}
+          secrets: |
+            /secrets/firebase/firebase.json=firebase-sa-key:latest
+            /secrets/gcp/gcp.json=gcp-sa-key:latest
