@@ -71,12 +71,15 @@ def hello():
 @firebase_auth_required  # Apply authentication to this route
 def process_pdfs():
     try:
+        logger.info("Received request")
+        import base64
 
         # Get JSON data
         data = request.get_json()
+        file_bytes = base64.b64decode(data['file'])
 
         # Convert base64 string to bytes if needed
-        file_bytes = data['file'] if isinstance(data['file'], bytes) else bytes(data['file'])
+        # file_bytes = data['file'] if isinstance(data['file'], bytes) else bytes(data['file'])
         # Create a file-like object
         file = BytesIO(file_bytes)
 
