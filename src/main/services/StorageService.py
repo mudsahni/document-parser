@@ -4,7 +4,7 @@ from typing import List
 from google.cloud import storage
 from werkzeug.utils import secure_filename
 
-from src.main.logs.logger import setup_logger
+from ..logs.logger import setup_logger
 
 
 class StorageService:
