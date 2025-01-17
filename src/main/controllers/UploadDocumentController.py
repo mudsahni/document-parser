@@ -68,7 +68,7 @@ def hello():
 
 
 @upload_documents_bp.route('/upload', methods=['POST'])
-@firebase_auth_required  # Apply authentication to this route
+# @firebase_auth_required  # Apply authentication to this route
 def process_pdfs():
     try:
         logger.info("Received request")
