@@ -5,9 +5,14 @@ from io import BytesIO
 
 from firebase_admin import credentials, initialize_app, auth
 from flask import Blueprint, request, jsonify
+from google.auth import default
 from google.auth.transport import requests
+import requests as r
 from google.cloud import secretmanager
-from google.oauth2 import id_token
+from google.oauth2 import id_token, service_account
+from google.oauth2.id_token import fetch_id_token
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 
 from ..logs.logger import setup_logger
 from ..models.dto.request.UploadDocumentRequest import UploadDocumentRequest
@@ -17,17 +22,6 @@ upload_documents_bp = Blueprint('upload_documents', __name__)
 logger = setup_logger(__name__)
 
 storage_service = StorageService("ms_document_store_one")
-
-
-# def get_firebase_credentials(env: str) -> str:
-#     if env == 'dev':
-#         with open("../secrets/firebase-service-account.json", 'r') as creds:
-#             return creds.read()
-#     else:
-#         client = secretmanager.SecretManagerServiceClient()
-#         name = f"projects/muditsahni-bb2eb/secrets/firebase-sa-key/versions/latest"
-#         response = client.access_secret_version(request={"name": name})
-#         return response.payload.data.decode('UTF-8')
 
 
 def verify_oidc_token(request):
@@ -49,34 +43,6 @@ def verify_oidc_token(request):
 def health_check():
     logger.info("Health check")
     return jsonify({"message": "Upload Document Service is healthy"}), 200
-
-
-# Initialize Firebase Admin SDK
-# cred = credentials.Certificate(json.loads(get_firebase_credentials(os.getenv("ENV", "dev"))))
-# initialize_app(cred)
-
-
-# Decorator for Firebase token authentication
-# def firebase_auth_required(f):
-#     @functools.wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         # Extract Authorization header
-#         auth_header = request.headers.get('Authorization', None)
-#         if not auth_header or not auth_header.startswith('Bearer '):
-#             return jsonify({"error": "Authorization header missing or invalid"}), 401
-#
-#         token = auth_header.split('Bearer ')[1]
-#
-#         try:
-#             # Verify the token with Firebase
-#             decoded_token = auth.verify_id_token(token)
-#             request.user = decoded_token  # Attach user info to the request
-#         except Exception as e:
-#             return jsonify({"error": "Invalid or expired token", "details": str(e)}), 401
-#
-#         return f(*args, **kwargs)
-#
-#     return decorated_function
 
 
 @upload_documents_bp.route("/hello", methods=['GET'])
@@ -110,6 +76,7 @@ def process_pdfs():
             uploadPath=data['upload_path'],
             fileName=data['file_name'],
             collectionId=data['collection_id'],
+            documentId=data['document_id'],
             tenantId=data['tenant_id'],
             userId=data['user_id'],
             fileType=data['file_type'],
@@ -124,7 +91,47 @@ def process_pdfs():
         logger.info(f"Uploading file: {task.fileName}")
         storage_service.upload_files(task.fileName, task.uploadPath, [task.file])
         logger.info("File uploaded successfully")
-        return jsonify({"message": "Upload task received"}), 200
 
+        # Get credentials for service-to-service auth
+        # Get default credentials
+        credentials, project = default()
+        credentials = credentials.with_scopes(['https://www.googleapis.com/auth/cloud-platform'])
+
+        # Get ID token for the callback
+        auth_req = requests.Request()
+        id_token = fetch_id_token(auth_req, task.callbackUrl)
+
+        session = r.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=0.5,
+            status_forcelist=[500, 502, 503, 504]
+        )
+        session.mount('http://', HTTPAdapter(max_retries=retries))
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+
+        # make a call to the callback api
+        callback_response = session.post(
+            task.callbackUrl,
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {id_token}'
+            },
+            json={
+                "collectionId": task.collectionId,
+                "documentId": task.documentId,
+                "uploadPath": task.uploadPath + "/" + task.fileName,
+                "status": "SUCCESS",
+                "error": None
+            }
+        )
+
+        if callback_response.status_code != 200:
+            logger.error(f"Callback failed with status {callback_response.status_code}: {callback_response.text}")
+            return jsonify({"error": "Callback failed"}), 500
+
+        logger.info(f"Callback response: {callback_response.status_code}")
+        return jsonify({"message": "File uploaded successfully"}), 200
     except Exception as e:
+        logger.error(f"Error making callback request: {str(e)}")
         return jsonify({"error": str(e)}), 500

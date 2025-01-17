@@ -10,6 +10,7 @@ class UploadDocumentRequest:
     uploadPath: str
     fileName: str
     collectionId: str
+    documentId: str
     tenantId: str
     userId: str
     fileType: str
