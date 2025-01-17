@@ -74,8 +74,8 @@ def process_pdfs():
     try:
         # Ensure all necessary fields are present
         required_fields = [
-            "uploadPath", "fileName", "collectionId", "tenantId",
-            "userId", "fileType", "fileSize", "callbackUrl"
+            "upload_path", "file_name", "collection_id", "tenant_id",
+            "user_id", "file_type", "file_size", "callback_url"
         ]
 
         if 'file' not in request.files:
@@ -90,14 +90,14 @@ def process_pdfs():
         if not uploaded_file:
             return jsonify({"error": "Missing 'file' field in the form data"}), 400
 
-        upload_path = request.form.get("uploadPath")
+        upload_path = request.form.get("upload_path")
         file_name = secure_filename(uploaded_file.filename)
-        collection_id = request.form.get("collectionId")
-        tenant_id = request.form.get("tenantId")
-        user_id = request.form.get("userId")
-        file_type = request.form.get("fileType")
-        file_size = int(request.form.get("fileSize"))
-        callback_url = request.form.get("callbackUrl")
+        collection_id = request.form.get("collection_id")
+        tenant_id = request.form.get("tenant_id")
+        user_id = request.form.get("user_id")
+        file_type = request.form.get("file_type")
+        file_size = int(request.form.get("file_size"))
+        callback_url = request.form.get("callback_url")
 
         logger.info(f"Received upload task for file: {file_name}")
         # Map the data to the UploadDocumentTask dataclass
