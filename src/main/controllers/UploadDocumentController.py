@@ -89,7 +89,7 @@ def process_pdfs():
         # Map the data to the UploadDocumentTask dataclass
 
         logger.info(f"Uploading file: {task.fileName}")
-        storage_service.upload_files(task.fileName, task.uploadPath, [task.file])
+        storage_service.upload_file(task.fileName, task.uploadPath, task.file)
         logger.info("File uploaded successfully")
 
         # Get credentials for service-to-service auth
