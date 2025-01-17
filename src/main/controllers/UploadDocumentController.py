@@ -5,7 +5,9 @@ from io import BytesIO
 
 from firebase_admin import credentials, initialize_app, auth
 from flask import Blueprint, request, jsonify
+from google.auth.transport import requests
 from google.cloud import secretmanager
+from google.oauth2 import id_token
 
 from ..logs.logger import setup_logger
 from ..models.dto.request.UploadDocumentRequest import UploadDocumentRequest
@@ -17,15 +19,30 @@ logger = setup_logger(__name__)
 storage_service = StorageService("ms_document_store_one")
 
 
-def get_firebase_credentials(env: str) -> str:
-    if env == 'dev':
-        with open("../secrets/firebase-service-account.json", 'r') as creds:
-            return creds.read()
-    else:
-        client = secretmanager.SecretManagerServiceClient()
-        name = f"projects/muditsahni-bb2eb/secrets/firebase-sa-key/versions/latest"
-        response = client.access_secret_version(request={"name": name})
-        return response.payload.data.decode('UTF-8')
+# def get_firebase_credentials(env: str) -> str:
+#     if env == 'dev':
+#         with open("../secrets/firebase-service-account.json", 'r') as creds:
+#             return creds.read()
+#     else:
+#         client = secretmanager.SecretManagerServiceClient()
+#         name = f"projects/muditsahni-bb2eb/secrets/firebase-sa-key/versions/latest"
+#         response = client.access_secret_version(request={"name": name})
+#         return response.payload.data.decode('UTF-8')
+
+
+def verify_oidc_token(request):
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return None
+
+    token = auth_header.split('Bearer ')[1]
+    try:
+        # Verify the token
+        decoded_token = id_token.verify_oauth2_token(
+            token, requests.Request())
+        return decoded_token
+    except Exception as e:
+        return None
 
 
 @upload_documents_bp.route('/health', methods=['GET'])
@@ -35,31 +52,31 @@ def health_check():
 
 
 # Initialize Firebase Admin SDK
-cred = credentials.Certificate(json.loads(get_firebase_credentials(os.getenv("ENV", "dev"))))
-initialize_app(cred)
+# cred = credentials.Certificate(json.loads(get_firebase_credentials(os.getenv("ENV", "dev"))))
+# initialize_app(cred)
 
 
 # Decorator for Firebase token authentication
-def firebase_auth_required(f):
-    @functools.wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Extract Authorization header
-        auth_header = request.headers.get('Authorization', None)
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Authorization header missing or invalid"}), 401
-
-        token = auth_header.split('Bearer ')[1]
-
-        try:
-            # Verify the token with Firebase
-            decoded_token = auth.verify_id_token(token)
-            request.user = decoded_token  # Attach user info to the request
-        except Exception as e:
-            return jsonify({"error": "Invalid or expired token", "details": str(e)}), 401
-
-        return f(*args, **kwargs)
-
-    return decorated_function
+# def firebase_auth_required(f):
+#     @functools.wraps(f)
+#     def decorated_function(*args, **kwargs):
+#         # Extract Authorization header
+#         auth_header = request.headers.get('Authorization', None)
+#         if not auth_header or not auth_header.startswith('Bearer '):
+#             return jsonify({"error": "Authorization header missing or invalid"}), 401
+#
+#         token = auth_header.split('Bearer ')[1]
+#
+#         try:
+#             # Verify the token with Firebase
+#             decoded_token = auth.verify_id_token(token)
+#             request.user = decoded_token  # Attach user info to the request
+#         except Exception as e:
+#             return jsonify({"error": "Invalid or expired token", "details": str(e)}), 401
+#
+#         return f(*args, **kwargs)
+#
+#     return decorated_function
 
 
 @upload_documents_bp.route("/hello", methods=['GET'])
@@ -70,8 +87,13 @@ def hello():
 @upload_documents_bp.route('/upload', methods=['POST'])
 # @firebase_auth_required  # Apply authentication to this route
 def process_pdfs():
+    logger.info("Received request")
+
+    token = verify_oidc_token(request)
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
-        logger.info("Received request")
         import base64
 
         # Get JSON data

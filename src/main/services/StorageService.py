@@ -2,7 +2,6 @@ from io import BytesIO
 from typing import List
 
 from google.cloud import storage
-from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 
