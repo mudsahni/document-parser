@@ -1,3 +1,4 @@
+from io import BytesIO
 from typing import List
 
 from google.cloud import storage
@@ -10,13 +11,13 @@ class StorageService:
         self.storage_client = storage.Client()
         self.bucket = self.storage_client.bucket(bucket_name)
 
-    def upload_files(self, file_path: str, files: List[FileStorage]) -> List[str]:
+    def upload_files(self, file_name: str, file_path: str, files: List[BytesIO]) -> List[str]:
         """Upload files to GCS and return their GCS paths"""
         uploaded_paths = []
 
         for file in files:
             # Create a safe filename
-            secure_file_name = secure_filename(file.filename)
+            secure_file_name = secure_filename(file_name)
             filename = f"{file_path}/{secure_file_name}"
             blob = self.bucket.blob(filename)
 

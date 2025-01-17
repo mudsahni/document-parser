@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from io import BytesIO
 
 from werkzeug.datastructures import FileStorage
 
@@ -13,5 +14,5 @@ class UploadDocumentRequest:
     userId: str
     fileType: str
     fileSize: int
-    file: FileStorage
+    file: BytesIO
     callbackUrl: str

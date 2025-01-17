@@ -1,12 +1,11 @@
 import functools
 import json
 import os
+from io import BytesIO
 
 from firebase_admin import credentials, initialize_app, auth
 from flask import Blueprint, request, jsonify
 from google.cloud import secretmanager
-from werkzeug.datastructures import FileStorage
-from werkzeug.utils import secure_filename
 
 from ..logs.logger import setup_logger
 from ..models.dto.request.UploadDocumentRequest import UploadDocumentRequest
@@ -72,49 +71,33 @@ def hello():
 @firebase_auth_required  # Apply authentication to this route
 def process_pdfs():
     try:
-        # Ensure all necessary fields are present
-        required_fields = [
-            "upload_path", "file_name", "collection_id", "tenant_id",
-            "user_id", "file_type", "file_size", "callback_url"
-        ]
 
-        if 'file' not in request.files:
-            return jsonify({"error": "No file part"}), 400
+        # Get JSON data
+        data = request.get_json()
 
-        # Check if any required fields are missing in the form data
-        missing_fields = [field for field in required_fields if field not in request.form]
-        if missing_fields:
-            return jsonify({"error": f"Missing fields: {', '.join(missing_fields)}"}), 400
+        # Convert base64 string to bytes if needed
+        file_bytes = data['file'] if isinstance(data['file'], bytes) else bytes(data['file'])
+        # Create a file-like object
+        file = BytesIO(file_bytes)
 
-        uploaded_file: FileStorage = request.files.get("file")
-        if not uploaded_file:
-            return jsonify({"error": "Missing 'file' field in the form data"}), 400
-
-        upload_path = request.form.get("upload_path")
-        file_name = secure_filename(uploaded_file.filename)
-        collection_id = request.form.get("collection_id")
-        tenant_id = request.form.get("tenant_id")
-        user_id = request.form.get("user_id")
-        file_type = request.form.get("file_type")
-        file_size = int(request.form.get("file_size"))
-        callback_url = request.form.get("callback_url")
-
-        logger.info(f"Received upload task for file: {file_name}")
         # Map the data to the UploadDocumentTask dataclass
         task = UploadDocumentRequest(
-            uploadPath=upload_path,
-            fileName=file_name,
-            collectionId=collection_id,
-            tenantId=tenant_id,
-            userId=user_id,
-            fileType=file_type,  # Optionally validate against FileType Enum
-            fileSize=file_size,
-            file=uploaded_file,  # Assuming file is sent as a Base64-encoded string
-            callbackUrl=callback_url
+            uploadPath=data['upload_path'],
+            fileName=data['file_name'],
+            collectionId=data['collection_id'],
+            tenantId=data['tenant_id'],
+            userId=data['user_id'],
+            fileType=data['file_type'],
+            fileSize=data['file_size'] or len(file_bytes),
+            file=file,
+            callbackUrl=data['callback_url']
         )
 
+        logger.info(f"Received upload task for file: {task.fileName}")
+        # Map the data to the UploadDocumentTask dataclass
+
         logger.info(f"Uploading file: {task.fileName}")
-        storage_service.upload_files(task.uploadPath, [task.file])
+        storage_service.upload_files(task.fileName, task.uploadPath, [task.file])
         logger.info("File uploaded successfully")
         return jsonify({"message": "Upload task received"}), 200
 
