@@ -99,7 +99,7 @@ def process_pdfs():
 
         # Get ID token for the callback
         auth_req = requests.Request()
-        id_token = fetch_id_token(auth_req, task.callbackUrl)
+        id_token = fetch_id_token(auth_req, "muditsahni-bb2eb")
 
         logger.info(f"This is the token: {id_token}")
         session = r.Session()
