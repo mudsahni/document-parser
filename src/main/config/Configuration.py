@@ -14,11 +14,11 @@ def load_yaml_file(path: str) -> Dict:
 
 def load_config() -> Dict:
     # Load base configuration first
-    base_config = load_yaml_file('/resources/application.yaml')
+    base_config = load_yaml_file(os.path.join(os.getcwd() + '/resources/application.yaml'))
 
     # Load environment specific config
     env = os.getenv(EnvConstants.ENV.value, 'dev')
-    env_config = load_yaml_file(f'resources/{env}.yaml')
+    env_config = load_yaml_file(os.path.join(os.getcwd() + f'/resources/application-{env}.yaml'))
 
     # Merge configs, with env-specific values overriding base values
     return always_merger.merge(base_config, env_config)
