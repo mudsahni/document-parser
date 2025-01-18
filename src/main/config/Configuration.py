@@ -35,3 +35,7 @@ class Configuration(object):
     @property
     def bucket_name(self):
         return self._config['storage']['bucket']
+
+    @property
+    def document_store_api(self):
+        return self._config['document-parser']['url']

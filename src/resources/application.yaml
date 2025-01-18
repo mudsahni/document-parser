@@ -1,2 +1,5 @@
 storage:
   bucket: "ms_document_store_one"
+
+document-store:
+    url: "https://documentstore-741672280176.asia-south2.run.app"

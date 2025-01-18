@@ -1,7 +1,6 @@
 from io import BytesIO
 
 from flask import Blueprint, request, jsonify
-from google.auth import default
 from google.auth.transport import requests
 import requests as r
 from google.oauth2 import id_token
@@ -9,6 +8,7 @@ from google.oauth2.id_token import fetch_id_token
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
+from ..config.Configuration import Configuration
 from ..logs.logger import setup_logger
 from ..models.dto.request.UploadDocumentRequest import UploadDocumentRequest
 from ..services.StorageService import StorageService
@@ -16,7 +16,8 @@ from ..services.StorageService import StorageService
 upload_documents_bp = Blueprint('upload_documents', __name__)
 logger = setup_logger(__name__)
 
-storage_service = StorageService("ms_document_store_one")
+config = Configuration()
+storage_service = StorageService(config.bucket_name)
 
 
 def verify_oidc_token(request):
@@ -89,7 +90,7 @@ def process_pdfs():
 
         # Get ID token for the callback
         auth_req = requests.Request()
-        id_token = fetch_id_token(auth_req, "https://documentstore-741672280176.asia-south2.run.app")
+        id_token = fetch_id_token(auth_req, config.document_store_api)
 
         logger.info(f"This is the token: {id_token}")
         session = r.Session()
