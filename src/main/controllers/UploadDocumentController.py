@@ -1,15 +1,10 @@
-import functools
-import json
-import os
 from io import BytesIO
 
-from firebase_admin import credentials, initialize_app, auth
 from flask import Blueprint, request, jsonify
 from google.auth import default
 from google.auth.transport import requests
 import requests as r
-from google.cloud import secretmanager
-from google.oauth2 import id_token, service_account
+from google.oauth2 import id_token
 from google.oauth2.id_token import fetch_id_token
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
@@ -92,14 +87,9 @@ def process_pdfs():
         storage_service.upload_file(task.fileName, task.uploadPath, task.file)
         logger.info("File uploaded successfully")
 
-        # Get credentials for service-to-service auth
-        # Get default credentials
-        credentials, project = default()
-        credentials = credentials.with_scopes(['https://www.googleapis.com/auth/cloud-platform'])
-
         # Get ID token for the callback
         auth_req = requests.Request()
-        id_token = fetch_id_token(auth_req, "muditsahni-bb2eb")
+        id_token = fetch_id_token(auth_req, "https://documentstore-741672280176.asia-south2.run.app")
 
         logger.info(f"This is the token: {id_token}")
         session = r.Session()
