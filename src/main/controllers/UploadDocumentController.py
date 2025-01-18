@@ -101,6 +101,7 @@ def process_pdfs():
         auth_req = requests.Request()
         id_token = fetch_id_token(auth_req, task.callbackUrl)
 
+        logger.info(f"This is the token: {id_token}")
         session = r.Session()
         retries = Retry(
             total=3,
@@ -118,6 +119,8 @@ def process_pdfs():
                 'Authorization': f'Bearer {id_token}'
             },
             json={
+                "tenantId": task.tenantId,
+                "userId": task.userId,
                 "collectionId": task.collectionId,
                 "documentId": task.documentId,
                 "uploadPath": task.uploadPath + "/" + task.fileName,
