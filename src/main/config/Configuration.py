@@ -38,4 +38,4 @@ class Configuration(object):
 
     @property
     def document_store_api(self):
-        return self._config['document-parser']['url']
+        return self._config['document-store']['url']
