@@ -46,9 +46,25 @@ def hello():
     return jsonify({"message": "Hello, World!"}), 200
 
 
+@upload_documents_bp.route('/process', methods=['POST'])
+def process_pdfs():
+    logger.info("Received processing request")
+
+    token = verify_oidc_token(request)
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        data = request.get_json()
+        logger.info(f"Received request: {data}")
+    except Exception as e:
+        logger.error(f"Error parsing JSON: {str(e)}")
+        return jsonify({"error": "Invalid JSON"}), 400
+
+
 @upload_documents_bp.route('/upload', methods=['POST'])
 # @firebase_auth_required  # Apply authentication to this route
-def process_pdfs():
+def upload_pdfs():
     logger.info("Received request")
 
     token = verify_oidc_token(request)
