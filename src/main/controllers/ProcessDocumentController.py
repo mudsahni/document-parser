@@ -47,6 +47,7 @@ def process_pdfs():
 
         id_token = get_callback_id_token(config.document_store_api)
 
+        logger.info(f"Processing document: {id_token}")
         # make a call to the callback api
         callback_response = session.post(
             process_document_request.callback_url,
