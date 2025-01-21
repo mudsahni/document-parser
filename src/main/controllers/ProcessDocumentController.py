@@ -63,6 +63,7 @@ def process_pdfs():
             return jsonify({"error": "Callback failed"}), 500
 
         logger.info(f"Callback response: {callback_response.status_code}")
+        return jsonify({"message": "File processed successfully"}), 200
 
     except Exception as e:
         logger.error(f"Error parsing JSON: {str(e)}")
