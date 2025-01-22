@@ -20,6 +20,7 @@ def create_app():
     CORS(app)
 
     services.init_storage_service(app.config['CONFIGURATION'].bucket_name)
+    services.init_anthropic_client(app.config['CONFIGURATION'].anthropic_api_key)
 
     app.register_blueprint(upload_document_bp, url_prefix='/api/v1/upload')
     app.register_blueprint(process_document_bp, url_prefix='/api/v1/process')

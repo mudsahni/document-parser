@@ -1,6 +1,7 @@
 from io import BytesIO
-from typing import List
+from typing import List, Tuple, Union
 
+import requests
 from google.cloud import storage
 from werkzeug.utils import secure_filename
 
@@ -39,3 +40,32 @@ class StorageService:
             )
             urls.append(url)
         return urls
+
+
+    def download_from_signed_url(self, signed_url: str) -> BytesIO:
+        """
+        Downloads a file from a signed URL and returns it as a BytesIO object.
+
+        Args:
+            signed_url: The signed URL to download from
+
+        Returns:
+            Tuple of (BytesIO object or error message, HTTP status code)
+        """
+        # Stream the response to handle large files efficiently
+        response = requests.get(signed_url, stream=True)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx, 5xx)
+
+        # Create a BytesIO object to store the file data
+        file_data = BytesIO()
+
+        # Stream the file in chunks to avoid memory issues
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                file_data.write(chunk)
+
+        # Reset the pointer to the beginning of the file
+        file_data.seek(0)
+
+        return file_data
+

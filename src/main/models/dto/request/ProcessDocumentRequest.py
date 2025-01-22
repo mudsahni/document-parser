@@ -8,6 +8,7 @@ class ProcessDocumentRequest:
     tenant_id: str
     collection_id: str
     id: str
+    prompt: str
     type: DocumentType
     file_type: str
     url: str
@@ -19,6 +20,7 @@ class ProcessDocumentRequest:
             "tenant_id": self.tenant_id,
             "collection_id": self.collection_id,
             "id": self.id,
+            "prompt": self.prompt,
             "type": self.type,
             "file_type": self.file_type,
             "url": self.url,

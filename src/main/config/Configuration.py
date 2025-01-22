@@ -5,6 +5,7 @@ import yaml
 
 from .constants.EnvConstants import EnvConstants
 from ..logs.logger import setup_logger
+from ..utils.request_utls import access_secret_version
 
 logger = setup_logger(__name__)
 
@@ -24,9 +25,14 @@ def load_config() -> Dict:
     return always_merger.merge(base_config, env_config)
 
 
+
 class Configuration(object):
     def __init__(self):
         self._config = load_config()
+        self.anthropic_api_key = access_secret_version(
+            self._config['gcp']['project-number'],
+            "anthropic_api_key"
+        )
 
     @property
     def env(self):
@@ -39,3 +45,4 @@ class Configuration(object):
     @property
     def document_store_api(self):
         return self._config['document-store']['url']
+
