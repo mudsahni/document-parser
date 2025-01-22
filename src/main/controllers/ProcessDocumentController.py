@@ -39,14 +39,13 @@ def process_pdfs():
         )
 
         # downloading file
-        file_contents: BytesIO = services.download_from_signed_url(process_document_request.url)
+        file_contents: BytesIO = services.storage_service.download_from_signed_url(process_document_request.url)
 
         response = services.anthropic_client.process_pdf(
             file_name=process_document_request.name,
             file_content=file_contents,
             prompt=process_document_request.prompt
         )
-
 
         logger.info("This is the response")
         logger.info(response)
