@@ -43,7 +43,7 @@ def process_pdfs():
 
         response = services.anthropic_client.process_pdf(
             file_name=process_document_request.name,
-            file_content=file_contents,
+            file_content=file_contents.getvalue(),
             prompt=process_document_request.prompt
         )
 
