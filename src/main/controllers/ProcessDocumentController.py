@@ -3,7 +3,7 @@ from io import BytesIO
 from flask import Blueprint, request, jsonify, current_app
 
 from . import session
-from .. import services
+from ..services import services
 from ..logs.logger import setup_logger
 from ..models.dto.response.ProcessDocumentCallbackRequest import ProcessDocumentCallbackRequest
 from ..models.dto.request.ProcessDocumentRequest import ProcessDocumentRequest
