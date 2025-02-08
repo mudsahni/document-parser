@@ -10,7 +10,7 @@ class GeminiClient:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.logger = setup_logger(__name__)
-        self.client: Client = genai.Client(api_key="")
+        self.client: Client = genai.Client(api_key=api_key)
         self.GEMINI_MODEL = "gemini-2.0-flash"
 
     def process_pdf(
