@@ -11,7 +11,7 @@ class ServiceRegistry:
     def __init__(self):
         self.storage_service: Optional[StorageService] = None
         self.anthropic_client: Optional[AnthropicClient] = None
-        self.gemini_client = Optional[GeminiClient] = None
+        self.gemini_client: Optional[GeminiClient] = None
         self.logger = setup_logger(__name__)
 
     def init_storage_service(self, bucket_name: str):
