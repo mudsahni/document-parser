@@ -18,6 +18,10 @@ def process_pdfs():
     config = current_app.config['CONFIGURATION']
     logger.info("Received processing request")
 
+    # Get the optional 'ai' query parameter, with a default value (e.g., None or 'default')
+    ai_type = request.args.get('ai', None)
+    logger.info(f"AI type requested: {ai_type}")
+
     token = verify_oidc_token(request)
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
@@ -38,17 +42,22 @@ def process_pdfs():
             callback_url=data['callback_url']
         )
 
+
         # downloading file
         file_contents: BytesIO = services.storage_service.download_from_signed_url(process_document_request.url)
 
-        response = services.anthropic_client.process_pdf(
+        model_function = services.anthropic_client.process_pdf
+        if ai_type is not None and ai_type == 'GEMINI':
+            logger.info("Processing with Gemini")
+            model_function = services.gemini_client.process_pdf
+        else:
+            logger.info("Processing with Anthropic")
+
+        response = model_function(
             file_name=process_document_request.name,
             file_content=file_contents.getvalue(),
             prompt=process_document_request.prompt
         )
-
-        logger.info("This is the response")
-        logger.info(response)
 
         # Map the data to the UploadDocumentTask dataclass
         processed_document = ProcessDocumentCallbackRequest(

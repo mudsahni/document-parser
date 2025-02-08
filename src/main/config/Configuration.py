@@ -33,6 +33,10 @@ class Configuration(object):
             self._config['gcp']['project-number'],
             "anthropic_api_key"
         )
+        self.gemini_api_key = access_secret_version(
+            self._config['gcp']['project-number'],
+            "gemini_api_key"
+        )
 
     @property
     def env(self):
