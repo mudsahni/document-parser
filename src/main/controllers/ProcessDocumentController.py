@@ -14,7 +14,7 @@ logger = setup_logger(__name__)
 
 
 @process_document_bp.route('', methods=['POST'])
-def process_pdfs():
+def process_files():
     config = current_app.config['CONFIGURATION']
     logger.info("Received processing request")
 
@@ -46,10 +46,10 @@ def process_pdfs():
         # downloading file
         file_contents: BytesIO = services.storage_service.download_from_signed_url(process_document_request.url)
 
-        model_function = services.anthropic_client.process_pdf
+        model_function = services.anthropic_client.process_file
         if ai_type is not None and ai_type == 'GEMINI':
             logger.info("Processing with Gemini")
-            model_function = services.gemini_client.process_pdf
+            model_function = services.gemini_client.process_file
         else:
             logger.info("Processing with Anthropic")
 
