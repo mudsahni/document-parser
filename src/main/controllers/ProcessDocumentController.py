@@ -53,11 +53,26 @@ def process_files():
         else:
             logger.info("Processing with Anthropic")
 
-        response = model_function(
-            file_name=process_document_request.name,
-            file_content=file_contents.getvalue(),
-            prompt=process_document_request.prompt
-        )
+        try:
+            response = model_function(
+                file_name=process_document_request.name,
+                file_content=file_contents.getvalue(),
+                prompt=process_document_request.prompt
+            )
+        except Exception as e:
+            if ai_type is not None and ai_type == 'GEMINI':
+                logger.error(f"Error processing with Gemini: {str(e)}")
+                model_function = services.anthropic_client.process_file
+            else:
+                logger.error(f"Error processing with Anthropic: {str(e)}")
+                model_function = services.gemini_client.process_file
+
+            response = model_function(
+                file_name=process_document_request.name,
+                file_content=file_contents.getvalue(),
+                prompt=process_document_request.prompt
+            )
+
 
         # Map the data to the UploadDocumentTask dataclass
         processed_document = ProcessDocumentCallbackRequest(
