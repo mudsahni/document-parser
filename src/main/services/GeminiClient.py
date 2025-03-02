@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 import requests
@@ -27,6 +28,30 @@ class GeminiClient:
             self.logger.warning(f"Unsupported file format: {extension}")
 
         return mime_type
+
+    def _validate_json_response(self, response_text: str, file_name: str) -> str:
+        """
+        Validate that the response is a valid JSON string
+
+        Args:
+            response_text: The text response from Claude
+            file_name: The name of the file being processed (for error reporting)
+
+        Returns:
+            The validated response text
+
+        Raises:
+            Exception: If the response is not valid JSON
+        """
+        try:
+            # Attempt to parse the string as JSON
+            json.loads(response_text)
+            return response_text
+        except json.JSONDecodeError as e:
+            error_msg = f"Invalid JSON response for file {file_name}: {str(e)}"
+            self.logger.error(error_msg)
+            self.logger.debug(f"Response content: {response_text[:200]}...")  # Log first 200 chars
+            raise Exception(error_msg)
 
     def process_file(
             self,
@@ -61,7 +86,11 @@ class GeminiClient:
                 self.logger.error("Error parsing PDF with name: " + file_name + " Invoice response is None")
                 raise Exception("Invoice response is None")
 
-            return str(file_response).replace("```json", "").replace("```", "")
+            json_response = str(file_response).replace("```json", "").replace("```", "")
+            # Validate that the response is valid JSON
+            validated_response = self._validate_json_response(json_response, file_name)
+
+            return validated_response
         except Exception as e:
             self.logger.error("Error parsing PDF with name: " + file_name)
             raise Exception("Error parsing PDF with name: " + file_name)
