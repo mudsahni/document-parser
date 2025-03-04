@@ -110,9 +110,9 @@ def process_files():
     logger.info(f"AI type requested: {ai_type}")
 
     # Verify authentication
-    # token = verify_oidc_token(request)
-    # if not token:
-    #     return jsonify({"error": "Unauthorized"}), 401
+    token = verify_oidc_token(request)
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
 
     try:
         data = request.get_json()
