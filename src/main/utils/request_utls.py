@@ -1,3 +1,4 @@
+import certifi
 import requests
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -7,6 +8,9 @@ from google.cloud import secretmanager
 
 def get_request_session() -> Session:
     session = requests.Session()
+    # Ensure the session uses Certifi's up-to-date certificate bundle
+    session.verify = certifi.where()
+
     retries = Retry(
         total=3,
         backoff_factor=0.5,

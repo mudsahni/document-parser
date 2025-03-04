@@ -1,4 +1,11 @@
+
+from gevent import monkey
+monkey.patch_all()
+
 import os
+import certifi
+os.environ['SSL_CERT_FILE'] = certifi.where()
+
 from main import create_app
 
 from dotenv import load_dotenv
