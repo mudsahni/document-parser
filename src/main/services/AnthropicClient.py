@@ -1,8 +1,10 @@
 import base64
 import json
+import time
 from typing import Optional, Dict, List
 
 import anthropic
+import backoff
 from anthropic import Anthropic
 
 from ..config.constants.MimeTypes import MIME_TYPES
@@ -92,6 +94,23 @@ class AnthropicClient:
         """
         return self.FILE_HEADERS.get(mime_type)
 
+    # Using backoff for retries with exponential backoff
+    @backoff.on_exception(
+        backoff.expo,
+        (anthropic.APIError, anthropic.APITimeoutError, anthropic.RateLimitError),
+        max_tries=3,  # Try up to 3 times
+        max_time=300,  # Give up after 5 minutes
+        jitter=backoff.full_jitter  # Add jitter to prevent thundering herd
+    )
+    def _call_anthropic_api(self, messages, header):
+
+        return self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            messages=messages,
+            max_tokens=self.MAX_TOKENS,
+            extra_headers={header[0]: header[1]}
+        )
+
     def process_file(
             self,
             file_name: str,
@@ -101,6 +120,8 @@ class AnthropicClient:
         """
         Process any supported file format (PDF, JPEG, PNG, TIFF)
         """
+        start_time = time.time()
+        self.logger.info(f"Starting processing of file: {file_name}")
 
         mime_type = self._get_mime_type(file_name)
         if not mime_type:
@@ -117,13 +138,17 @@ class AnthropicClient:
                 # TODO: Change to specific exception
                 raise ValueError("Could not encode file content to base64")
 
+            self.logger.info(f"File {file_name} encoded, sending to Anthropic")
+
             messages: List[Dict] = [build_anthropic_api_pdf_parsing_request(base64_content, prompt, mime_type)]
-            response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                messages=messages,
-                max_tokens=self.MAX_TOKENS,
-                extra_headers={header[0]: header[1]}
-            )
+            response = self._call_anthropic_api(messages, header)
+
+            # response = self.client.messages.create(
+            #     model="claude-3-5-sonnet-20241022",
+            #     messages=messages,
+            #     max_tokens=self.MAX_TOKENS,
+            #     extra_headers={header[0]: header[1]}
+            # )
 
             file_response = response.content[0].to_dict()['text']
 
@@ -138,8 +163,12 @@ class AnthropicClient:
             # Validate that the response is valid JSON
             validated_response = self._validate_json_response(file_response, file_name)
 
+            processing_time = time.time() - start_time
+            self.logger.info(f"Processed file {file_name} in {processing_time:.2f} seconds")
+
+
             return validated_response
         except Exception as e:
-            self.logger.error("Error parsing PDF with name: " + file_name)
-            raise Exception("Error parsing PDF with name: " + file_name)
+            self.logger.error(f"Error processing file {file_name}: {str(e)}")
+            raise Exception(f"Error processing file {file_name}: {str(e)}")
 
