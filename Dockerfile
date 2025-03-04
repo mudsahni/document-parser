@@ -6,6 +6,16 @@ WORKDIR /app
 # Set env to test
 ENV ENV=PROD
 
+# Install necessary SSL packages and update certificates
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        openssl \
+        curl \
+    && update-ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy the service account key into the Docker container
 COPY ./secrets/gcp-service-account-key.json src/application_default_credentials.json
 
@@ -28,9 +38,20 @@ COPY src /app/
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV PYTHONHTTPSVERIFY=1
+
+RUN echo "bind = '0.0.0.0:8080'\n\
+workers = 4\n\
+timeout = 300\n\
+keepalive = 2\n\
+worker_class = 'sync'\n\
+preload_app = False\n\
+loglevel = 'info'\n\
+accesslog = '-'\n\
+errorlog = '-'\n" > gunicorn_config.py
 
 # Expose port
 EXPOSE 8080
 
-# Command to run Gunicorn with your app (replace 'app:main' with the correct entry point)
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "300", "--workers", "4", "app:app"]
+# Command to run Gunicorn with config file
+CMD ["gunicorn", "--config", "gunicorn_config.py", "app:app"]
