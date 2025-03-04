@@ -33,4 +33,4 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 EXPOSE 8080
 
 # Command to run Gunicorn with your app (replace 'app:main' with the correct entry point)
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--timeout", "300", "--workers", "4", "app:app"]
