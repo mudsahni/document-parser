@@ -26,3 +26,4 @@ Thumbs.db         # Windows
 /other
 
 .venv/
+/scripts

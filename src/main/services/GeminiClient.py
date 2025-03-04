@@ -92,5 +92,5 @@ class GeminiClient:
 
             return validated_response
         except Exception as e:
-            self.logger.error("Error parsing PDF with name: " + file_name)
-            raise Exception("Error parsing PDF with name: " + file_name)
+            self.logger.error("Error parsing PDF with name: " + file_name + " " + str(e))
+            raise Exception("Error parsing PDF with name: " + file_name + " " + str(e))
