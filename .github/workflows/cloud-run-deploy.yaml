@@ -9,7 +9,7 @@ on:
 env:
   PROJECT_ID: muditsahni-bb2eb # Keep your project ID
   SERVICE_NAME: documentparser # Keep your service name
-  REGION: asia-south2 # Keep your region
+  REGION: asia-south1 # Keep your region
 
 jobs:
   build-and-deploy:
@@ -52,11 +52,11 @@ jobs:
 
       - name: Configure Docker for Artifact Registry
         run: |
-          gcloud auth configure-docker asia-south2-docker.pkg.dev
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
       - name: Build and Push Docker image
         run: |
-          IMAGE_PATH="asia-south2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/app"
+          IMAGE_PATH="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/app"
           docker build -t $IMAGE_PATH:${{ github.sha }} -t $IMAGE_PATH:latest .
           docker push $IMAGE_PATH:${{ github.sha }}
           docker push $IMAGE_PATH:latest
@@ -66,4 +66,4 @@ jobs:
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: asia-south2-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/app:${{ github.sha }}
+          image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/app:${{ github.sha }}
